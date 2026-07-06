@@ -98,6 +98,7 @@ def analyze_drawdown(series):
     underwater_start = None
     longest_underwater_ms = 0
     longest_underwater_span = (None, None)
+    underwater_closes = 0   # candles that closed below the running peak
 
     for ts, price in series:
         if price >= peak_price:
@@ -113,6 +114,7 @@ def analyze_drawdown(series):
         else:
             if underwater_start is None:
                 underwater_start = peak_ts
+            underwater_closes += 1
             dd = (peak_price - price) / peak_price * 100.0
             if dd > max_dd:
                 max_dd = dd
@@ -141,6 +143,9 @@ def analyze_drawdown(series):
             _fmt(longest_underwater_span[0]) if longest_underwater_span[0] else None,
             _fmt(longest_underwater_span[1]) if longest_underwater_span[1] else None,
         ],
+        # candles that closed below the running peak; with --interval 1d this is
+        # literally "X of the N days spent below a prior peak"
+        "underwater_closes": underwater_closes,
         "current_drawdown_pct": round(current_dd, 2),
         "samples": len(series),
         "first_date": _fmt(series[0][0]),
@@ -183,6 +188,8 @@ def print_report(symbol, interval, m):
                and m["current_drawdown_pct"] > 0)
     print(f"  Longest underwater ... {_days(m['longest_underwater_days'])} below a prior peak"
           + (" (ongoing)" if ongoing else ""))
+    unit = "days" if interval == "1d" else "candles"
+    print(f"  Time underwater ...... {m['underwater_closes']} of {m['samples']} {unit} closed below a prior peak")
     if m["current_drawdown_pct"] > 0:
         print(f"  Right now ............ -{m['current_drawdown_pct']:.2f}% below its high (this window)")
     else:

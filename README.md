@@ -22,7 +22,8 @@ $ python drawdown_lens.py BTCUSDT --days 365
     to trough .......... 2026-06-30  (58,624.71)
     fall took .......... 267 days
   Longest underwater ... 273 days below a prior peak (ongoing)
-  Right now ............ -50.55% below its high (this window)
+  Time underwater ...... 353 of 365 days closed below a prior peak
+  Right now ............ -48.81% below its high (this window)
   --------------------------------------------------------
   Returns are the story you're sold. Drawdown is the one you live through.
 ```
@@ -85,6 +86,7 @@ python drawdown_lens.py BTCUSDT --json
 - **Worst drawdown** — the deepest peak-to-trough drop in the window, with the exact peak and trough dates.
 - **Fall duration** — how many days the drop took.
 - **Longest underwater** — the longest stretch the price stayed below a previous peak (i.e. how long holders waited to break even).
+- **Time underwater** — how many of the window's candles closed below a prior peak (how much of the period holders spent losing, not just the single worst stretch).
 - **Current drawdown** — how far below its window-high the asset sits right now.
 
 All from public Binance data. Nothing is stored, nothing is sent anywhere.
