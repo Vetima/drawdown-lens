@@ -63,6 +63,9 @@ python drawdown_lens.py ETHUSDT --days 730
 # 6 months of SOL on 4-hour candles
 python drawdown_lens.py SOLUSDT --days 180 --interval 4h
 
+# Everything Binance has for the pair (BTC: 2017+, includes 2018's -83%)
+python drawdown_lens.py BTCUSDT --all
+
 # Raw JSON, for piping into your own scripts
 python drawdown_lens.py BTCUSDT --json
 ```
@@ -73,6 +76,7 @@ python drawdown_lens.py BTCUSDT --json
 |------|---------|---------|
 | `symbol` | — | Any Binance pair, e.g. `BTCUSDT`, `ETHUSDT`, `SOLUSDT` |
 | `--days` | `365` | Lookback window in days |
+| `--all` | off | Ignore `--days` and use the pair's full listed history |
 | `--interval` | `1d` | Candle size: `1h 2h 4h 6h 12h 1d 3d 1w` |
 | `--json` | off | Print machine-readable JSON instead of the report |
 

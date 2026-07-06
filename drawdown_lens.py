@@ -14,6 +14,7 @@ pain you actually have to live through. This tool puts that number in front of y
 Usage:
     python drawdown_lens.py BTCUSDT
     python drawdown_lens.py ETHUSDT --days 730 --interval 1d
+    python drawdown_lens.py BTCUSDT --all        # full listed history
     python drawdown_lens.py SOLUSDT --json
 
 No API key. No dependencies beyond the Python standard library.
@@ -42,12 +43,13 @@ _INTERVAL_MS = {
 
 
 def _fetch_closes(symbol, interval, days):
-    """Return list of (timestamp_ms, close_price) oldest->newest, spanning `days`."""
+    """Return list of (timestamp_ms, close_price) oldest->newest, spanning `days`.
+    days=None means everything Binance has for the pair."""
     if interval not in _INTERVAL_MS:
         raise ValueError(f"interval must be one of {', '.join(_INTERVAL_MS)}")
     step = _INTERVAL_MS[interval]
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    start_ms = now_ms - days * 86_400_000
+    start_ms = 0 if days is None else now_ms - days * 86_400_000
     rows = []
     cursor = start_ms
     while cursor < now_ms:
@@ -143,6 +145,9 @@ def analyze_drawdown(series):
         "samples": len(series),
         "first_date": _fmt(series[0][0]),
         "last_date": _fmt(last_ts),
+        # true if the deepest fall starts at the window's first sample: the real
+        # peak probably predates the window, so the number understates history.
+        "window_peak_is_first_sample": bool(max_dd > 0 and max_dd_peak_ts == series[0][0]),
     }
 
 
@@ -182,6 +187,9 @@ def print_report(symbol, interval, m):
         print(f"  Right now ............ -{m['current_drawdown_pct']:.2f}% below its high (this window)")
     else:
         print(f"  Right now ............ at/near its high for this window")
+    if m.get("window_peak_is_first_sample"):
+        print(f"  Heads-up ............. the peak is this window's first sample, so the")
+        print(f"                         real drawdown may be deeper. Try --all.")
     print("  " + "-" * 56)
     print("  Returns are the story you're sold. Drawdown is the one you live through.")
     print("  Made by Vetima | https://vetima.trade | not financial advice")
@@ -201,12 +209,14 @@ def main():
     p.add_argument("symbol", help="Binance pair, e.g. BTCUSDT, ETHUSDT, SOLUSDT")
     p.add_argument("--days", type=_positive_int, default=365,
                    help="lookback window in days (default 365)")
+    p.add_argument("--all", action="store_true",
+                   help="use the full history Binance has for the pair (overrides --days)")
     p.add_argument("--interval", default="1d", choices=list(_INTERVAL_MS),
                    help="candle size (default 1d)")
     p.add_argument("--json", action="store_true", help="print raw JSON instead of a report")
     args = p.parse_args()
 
-    series = _fetch_closes(args.symbol, args.interval, args.days)
+    series = _fetch_closes(args.symbol, args.interval, None if args.all else args.days)
     metrics = analyze_drawdown(series)
     metrics["symbol"] = args.symbol.upper()
     metrics["interval"] = args.interval
