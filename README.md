@@ -15,14 +15,14 @@ on your screen in one command.
 ```
 $ python drawdown_lens.py BTCUSDT --days 365
 
-  drawdown-lens | BTCUSDT | 1d | 2025-07-04 -> 2026-07-03
+  drawdown-lens | BTCUSDT | 1d | 2025-07-07 -> 2026-07-06
   --------------------------------------------------------
   Worst drawdown ....... -52.97%   ################..............
-    from peak .......... 2025-10-06  (124659)
-    to trough .......... 2026-06-30  (58624.7)
+    from peak .......... 2025-10-06  (124,658.54)
+    to trough .......... 2026-06-30  (58,624.71)
     fall took .......... 267 days
-  Longest underwater ... 270 days below a prior peak
-  Right now ............ -50.47% below its high (this window)
+  Longest underwater ... 273 days below a prior peak (ongoing)
+  Right now ............ -50.55% below its high (this window)
   --------------------------------------------------------
   Returns are the story you're sold. Drawdown is the one you live through.
 ```

@@ -24,11 +24,14 @@ Licensed MIT. Not financial advice.
 import argparse
 import json
 import sys
+import urllib.parse
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-BINANCE_KLINES = "https://api.binance.com/api/v3/klines"
+# data-api.binance.vision is Binance's official host for public market data:
+# same /api/v3/klines contract as api.binance.com, but not geo-restricted.
+BINANCE_KLINES = "https://data-api.binance.vision/api/v3/klines"
 # Binance caps klines at 1000 rows per call; we page backwards if needed.
 _MAX_PER_CALL = 1000
 _INTERVAL_MS = {
@@ -48,15 +51,23 @@ def _fetch_closes(symbol, interval, days):
     rows = []
     cursor = start_ms
     while cursor < now_ms:
-        url = (f"{BINANCE_KLINES}?symbol={symbol.upper()}&interval={interval}"
-               f"&startTime={cursor}&limit={_MAX_PER_CALL}")
+        url = (f"{BINANCE_KLINES}?symbol={urllib.parse.quote(symbol.upper())}"
+               f"&interval={interval}&startTime={cursor}&limit={_MAX_PER_CALL}")
         req = urllib.request.Request(url, headers={"User-Agent": "drawdown-lens"})
         try:
             with urllib.request.urlopen(req, timeout=20) as r:
                 batch = json.load(r)
         except urllib.error.HTTPError as e:
-            raise SystemExit(f"Binance API error {e.code} for '{symbol}'. "
-                             f"Is the symbol spelled right (e.g. BTCUSDT)?")
+            if e.code in (451, 403):
+                raise SystemExit(f"Binance blocks API access from this region/network "
+                                 f"(HTTP {e.code}). Try another network.")
+            if e.code in (429, 418):
+                raise SystemExit(f"Rate-limited by Binance (HTTP {e.code}). "
+                                 f"Wait a minute and retry.")
+            if e.code == 400:
+                raise SystemExit(f"Binance rejected '{symbol}' (HTTP 400). "
+                                 f"Is the symbol spelled right (e.g. BTCUSDT)?")
+            raise SystemExit(f"Binance API error {e.code} for '{symbol}'.")
         except urllib.error.URLError as e:
             raise SystemExit(f"Network error reaching Binance: {e.reason}")
         if not batch:
@@ -144,15 +155,29 @@ def _bar(pct, width=30):
     return "#" * filled + "." * (width - filled)
 
 
+def _price(p):
+    """Human price: no scientific notation for micro-priced coins (SHIB & co)."""
+    if p >= 1:
+        return f"{p:,.2f}"
+    return f"{p:.10f}".rstrip("0").rstrip(".")
+
+
+def _days(n):
+    return f"{n:g} day" + ("" if n == 1 else "s")
+
+
 def print_report(symbol, interval, m):
     print()
     print(f"  drawdown-lens | {symbol.upper()} | {interval} | {m['first_date']} -> {m['last_date']}")
     print("  " + "-" * 56)
     print(f"  Worst drawdown ....... -{m['max_drawdown_pct']:.2f}%   {_bar(m['max_drawdown_pct'])}")
-    print(f"    from peak .......... {m['max_dd_peak']['date']}  ({m['max_dd_peak']['price']:g})")
-    print(f"    to trough .......... {m['max_dd_trough']['date']}  ({m['max_dd_trough']['price']:g})")
-    print(f"    fall took .......... {m['max_dd_duration_days']:g} days")
-    print(f"  Longest underwater ... {m['longest_underwater_days']:g} days below a prior peak")
+    print(f"    from peak .......... {m['max_dd_peak']['date']}  ({_price(m['max_dd_peak']['price'])})")
+    print(f"    to trough .......... {m['max_dd_trough']['date']}  ({_price(m['max_dd_trough']['price'])})")
+    print(f"    fall took .......... {_days(m['max_dd_duration_days'])}")
+    ongoing = (m["longest_underwater_span"][1] == m["last_date"]
+               and m["current_drawdown_pct"] > 0)
+    print(f"  Longest underwater ... {_days(m['longest_underwater_days'])} below a prior peak"
+          + (" (ongoing)" if ongoing else ""))
     if m["current_drawdown_pct"] > 0:
         print(f"  Right now ............ -{m['current_drawdown_pct']:.2f}% below its high (this window)")
     else:
@@ -163,13 +188,21 @@ def print_report(symbol, interval, m):
     print()
 
 
+def _positive_int(v):
+    iv = int(v)
+    if iv <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return iv
+
+
 def main():
     p = argparse.ArgumentParser(
         description="Measure the real downside (drawdown) of any crypto asset, from public Binance data.")
     p.add_argument("symbol", help="Binance pair, e.g. BTCUSDT, ETHUSDT, SOLUSDT")
-    p.add_argument("--days", type=int, default=365, help="lookback window in days (default 365)")
-    p.add_argument("--interval", default="1d",
-                   help="candle size: 1h,2h,4h,6h,12h,1d,3d,1w (default 1d)")
+    p.add_argument("--days", type=_positive_int, default=365,
+                   help="lookback window in days (default 365)")
+    p.add_argument("--interval", default="1d", choices=list(_INTERVAL_MS),
+                   help="candle size (default 1d)")
     p.add_argument("--json", action="store_true", help="print raw JSON instead of a report")
     args = p.parse_args()
 
