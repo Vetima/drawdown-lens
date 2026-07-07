@@ -13,7 +13,7 @@ loss you have to *survive* to ever see those returns. `drawdown-lens` puts that 
 on your screen in one command.
 
 ```
-$ python drawdown_lens.py BTCUSDT --days 365
+$ python3 drawdown_lens.py BTCUSDT --days 365
 
   drawdown-lens | BTCUSDT | 1d | 2025-07-07 -> 2026-07-06
   --------------------------------------------------------
@@ -49,26 +49,27 @@ only the Python standard library.
 ```bash
 git clone https://github.com/Vetima/drawdown-lens.git
 cd drawdown-lens
-python drawdown_lens.py BTCUSDT
+python3 drawdown_lens.py BTCUSDT
 ```
 
 ## Usage
 
 ```bash
 # Last 365 days of BTC, daily candles (defaults)
-python drawdown_lens.py BTCUSDT
+python3 drawdown_lens.py BTCUSDT
 
 # Two years of ETH
-python drawdown_lens.py ETHUSDT --days 730
+python3 drawdown_lens.py ETHUSDT --days 730
 
 # 6 months of SOL on 4-hour candles
-python drawdown_lens.py SOLUSDT --days 180 --interval 4h
+python3 drawdown_lens.py SOLUSDT --days 180 --interval 4h
 
 # Everything Binance has for the pair (BTC: 2017+, includes 2018's -83%)
-python drawdown_lens.py BTCUSDT --all
+python3 drawdown_lens.py BTCUSDT --all
 
 # Raw JSON, for piping into your own scripts
-python drawdown_lens.py BTCUSDT --json
+python3 drawdown_lens.py BTCUSDT --json
+# (drawdown values in the JSON are positive magnitudes; the report adds the minus sign)
 ```
 
 **Options**

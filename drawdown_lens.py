@@ -12,10 +12,10 @@ Most people look at returns. Almost nobody looks at drawdown — the peak-to-tro
 pain you actually have to live through. This tool puts that number in front of you.
 
 Usage:
-    python drawdown_lens.py BTCUSDT
-    python drawdown_lens.py ETHUSDT --days 730 --interval 1d
-    python drawdown_lens.py BTCUSDT --all        # full listed history
-    python drawdown_lens.py SOLUSDT --json
+    python3 drawdown_lens.py BTCUSDT
+    python3 drawdown_lens.py ETHUSDT --days 730 --interval 1d
+    python3 drawdown_lens.py BTCUSDT --all        # full listed history
+    python3 drawdown_lens.py SOLUSDT --json
 
 No API key. No dependencies beyond the Python standard library.
 
